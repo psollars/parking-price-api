@@ -3,7 +3,6 @@ from pytz import timezone
 
 from rest_framework import viewsets, status
 from django.http import JsonResponse
-from rest_framework.decorators import action
 from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -51,7 +50,7 @@ class PriceView(APIView):
 
         if not start_str or not end_str:
             return Response(
-                "query parameters, 'start' and 'end' are required to be specified as ISO-8601 strings.",
+                "Query parameters, 'start' and 'end' are required to be specified as ISO-8601 strings.",
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -59,25 +58,30 @@ class PriceView(APIView):
         start_dt_utc = datetime.fromisoformat(start_str).astimezone(timezone("UTC"))
         end_dt_utc = datetime.fromisoformat(end_str).astimezone(timezone("UTC"))
 
-        # Check if the input spans more than one day
-        if start_dt_utc.date() != end_dt_utc.date():
-            return Response({"price": "unavailable"}, status=status.HTTP_200_OK)
+        if start_dt_utc > end_dt_utc:
+            return Response(
+                "Query parameters, 'start' must be before 'end'.",
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         total_matches = 0
         price_match = None
         for rate in Rate.objects.all():
             rate_tz = timezone(rate.tz)
-            start_dt = start_dt_utc.astimezone(rate_tz)
-            end_dt = end_dt_utc.astimezone(rate_tz)
+            start_dt_tz = start_dt_utc.astimezone(rate_tz)
+            end_dt_tz = end_dt_utc.astimezone(rate_tz)
 
-            # Check if the day of the week matches
-            if start_dt.strftime("%a").lower() in rate.days.lower().split(","):
-                rate_start_time, rate_end_time = map(int, rate.times.split("-"))
+            # After converting for the rate timezone, check if the input
+            # spans more than one day, and check if the day of the week matches
+            if start_dt_tz.day == end_dt_tz.day and start_dt_tz.strftime(
+                "%a"
+            ).lower() in rate.days.lower().split(","):
+                rate_start, rate_end = map(int, rate.times.split("-"))
 
                 # Check if the time range matches
                 if (
-                    rate_start_time <= int(start_dt.strftime("%H%M")) <= rate_end_time
-                    and rate_start_time <= int(end_dt.strftime("%H%M")) <= rate_end_time
+                    rate_start <= int(start_dt_tz.strftime("%H%M")) <= rate_end
+                    and rate_start <= int(end_dt_tz.strftime("%H%M")) <= rate_end
                 ):
                     total_matches += 1
                     price_match = rate.price

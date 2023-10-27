@@ -49,14 +49,46 @@ class PriceView(APIView):
         start_str = request.query_params.get("start")
         end_str = request.query_params.get("end")
 
+        if not start_str or not end_str:
+            return Response(
+                "query parameters, 'start' and 'end' are required to be specified as ISO-8601 strings.",
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         # Convert ISO-8601 strings to datetime objects
-        start_dt = datetime.fromisoformat(start_str)
-        end_dt = datetime.fromisoformat(end_str)
+        start_dt_utc = datetime.fromisoformat(start_str).astimezone(timezone("UTC"))
+        end_dt_utc = datetime.fromisoformat(end_str).astimezone(timezone("UTC"))
 
         # Check if the input spans more than one day
-        if start_dt.date() != end_dt.date():
+        if start_dt_utc.date() != end_dt_utc.date():
             return Response({"price": "unavailable"}, status=status.HTTP_200_OK)
 
-        # TODO: Add logic to find the corresponding rate and calculate the price
-        # For now return a placeholder response
-        return Response({"price": 5000}, status=status.HTTP_200_OK)
+        total_matches = 0
+        price_match = None
+        for rate in Rate.objects.all():
+            rate_tz = timezone(rate.tz)
+            start_dt = start_dt_utc.astimezone(rate_tz)
+            end_dt = end_dt_utc.astimezone(rate_tz)
+
+            # Check if the day of the week matches
+            if start_dt.strftime("%a").lower() in rate.days.lower().split(","):
+                rate_start_time, rate_end_time = map(int, rate.times.split("-"))
+
+                # Check if the time range matches
+                if (
+                    rate_start_time <= int(start_dt.strftime("%H%M")) <= rate_end_time
+                    and rate_start_time <= int(end_dt.strftime("%H%M")) <= rate_end_time
+                ):
+                    total_matches += 1
+                    price_match = rate.price
+
+                    # If rates overlap return default unavailable
+                    if total_matches > 1:
+                        return Response(
+                            {"price": "unavailable"}, status=status.HTTP_200_OK
+                        )
+
+        if total_matches == 1:
+            return Response({"price": price_match}, status=status.HTTP_200_OK)
+
+        return Response({"price": "unavailable"}, status=status.HTTP_200_OK)

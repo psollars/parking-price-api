@@ -1,0 +1,52 @@
+[
+  {
+    "model": "rates.rate",
+    "pk": 1,
+    "fields": {
+      "days": "mon,tues,thurs",
+      "times": "0900-2100",
+      "tz": "America/Chicago",
+      "price": 1500
+    }
+  },
+  {
+    "model": "rates.rate",
+    "pk": 2,
+    "fields": {
+      "days": "fri,sat,sun",
+      "times": "0900-2100",
+      "tz": "America/Chicago",
+      "price": 2000
+    }
+  },
+  {
+    "model": "rates.rate",
+    "pk": 3,
+    "fields": {
+      "days": "wed",
+      "times": "0600-1800",
+      "tz": "America/Chicago",
+      "price": 1750
+    }
+  },
+  {
+    "model": "rates.rate",
+    "pk": 4,
+    "fields": {
+      "days": "mon,wed,sat",
+      "times": "0100-0500",
+      "tz": "America/Chicago",
+      "price": 1000
+    }
+  },
+  {
+    "model": "rates.rate",
+    "pk": 5,
+    "fields": {
+      "days": "sun,tues",
+      "times": "0100-0700",
+      "tz": "America/Chicago",
+      "price": 925
+    }
+  }
+]

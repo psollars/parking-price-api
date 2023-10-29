@@ -1,8 +1,10 @@
-#!/bin/sh
+#!/bin/zsh
 
-if [! -d .venv/bin/activate ]; then
+if [ ! -d .venv ]; then
+  echo "Starting venv..."
   pipenv shell
+  echo "Installing packages..."
   pipenv install
 fi
 
-python manage.py test
+pipenv run python manage.py test

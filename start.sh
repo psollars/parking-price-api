@@ -1,11 +1,16 @@
-#!/bin/sh
+#!/bin/zsh
 
-if [! -d .venv/bin/activate ]; then
+if [ ! -d .venv ]; then
+  echo "Starting venv..."
   pipenv shell
+  echo "Installing packages..."
   pipenv install
 fi
 
-echo "Loading rates fixtures..."
-python manage.py loaddata rates/fixtures/rates_fixture.json
+echo "Running migrations..."
+pipenv run python manage.py migrate
 
-python manage.py runserver 5000
+echo "Loading rates fixtures..."
+pipenv run python manage.py loaddata rates/fixtures/rates_fixture.json
+
+pipenv run python manage.py runserver 5000

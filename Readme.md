@@ -1,122 +1,94 @@
-# **Sample Problem**
+# Parking Price API
 
----
+## Running the Application
 
-## The Application
+This project is built with [pipenv](https://pipenv.pypa.io/en/latest/) which is required to run the start up and testing scripts.
 
-Build an API that allows a user to enter a date time range and get back the price at which they would be charged to park for that time span
+You can start the application by running the `./start.sh` script from the command line. This will install necessary packages, create the database and initialize it with a set of parking rates, and launch the server on port `5000`.
 
-### API Endpoints
+**Alternatively**, the API can be launched in debug mode with VS Code. There is a `launch.json` that is configured to run this Django server on port `5000`, but VS Code will allow you to set breakpoints, etc.
 
-- The application publishes an API with two endpoints that computes a price for an input datetime range.
-- The API must respond to requests on port `5000`
-- The API must respond using JSON
+## The API
 
-#### Rates
+### Base URL
 
-The first endpoint is `rates`.
+The API is accessible at: http://127.0.0.1:5000/
 
-This path takes a `PUT` where rate information can be updated by submitting a modified rates JSON. This submitted JSON overwrites the stored rates.
+### GET `/rates/`
 
-- A rate is comprised of a price, time range the rate is valid, and days of the week the rate applies to
-- See the section `Sample JSON for testing` for the initial set of seeded rates. These rates are expected to be loaded into the database at application startup.
+Fetches all the parking rates stored in the database.
 
-This path when requested with a `GET` returns the rates stored.
+**Response**
 
-#### Price
+- 200 OK: Returns a JSON array of rate objects.
 
-The second endpoint is `price`. It allows the user to request the price for a requested time.
+```json
+[
+  {
+    "days": "mon,tues,wed",
+    "times": "0900-1700",
+    "tz": "America/Chicago",
+    "price": 1500
+  }
+  // ... more rates
+]
+```
 
-- It uses query parameters for requesting the price
-- The user specifies input date/times as ISO-8601 with timezones
-- The paramters are `start` and `end`.
-- An example query is `?start=2015-07-01T07:00:00-05:00&end=2015-07-01T12:00:00-05:00`
-- Response contains `price`
-  - ```
-    {
-       "price": 5000
-    }
-    ```
+### PUT `/rates/`
 
-##### Response Requirements
+Updates the parking rates by overwriting the existing rates with the new rates provided in the request body.
 
-- User input can span more than one day, but the API mustn't return a valid price - it must return `"unavailable"`
-- User input can span multiple rates, but the API mustn't return a valid price - it must return `"unavailable"`
-- Rates will not span multiple days
+**Request Body**
 
-### Application startup
+- A JSON array of rate objects.
+- The timezones specified as `tz` in the JSON should adhere to the 2017c version of the tz database. For more information, refer to: [https://en.wikipedia.org/wiki/List_of_tz_database_time_zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
 
-Rates are specified by a JSON file to be automatically loaded on start of the application. The format of this file is the same JSON structure that can be submitted to the `rates` endpoint. The values for these rates can be found in the `Sample JSON for testing` section below.
+```json
+[
+  {
+    "days": "mon,tues,wed",
+    "times": "0900-1700",
+    "tz": "America/Chicago",
+    "price": 1500
+  }
+  // ... more rates
+]
+```
 
-## Other Requirements
+**Response**
 
-- There must be documentation that one can follow to run the application
-- API endpoints must be clearly documented
-- Tests need to be in place
-- We will be running automated requests against your submission. Please take care to follow the requirements laid out.
-- Preferred languages are Python, Kotlin, Java, or Go to complete this
-  - If you are planning on using a different language, please let the recruiting team know your language of choice
+- 201 Created: Successfully updated the rates.
+- 400 Bad Request: Invalid data format.
 
-## Submitting
+### GET `/price/`
 
-- Zip up your submission and submit it via GreenHouse
-  - You can achieve this with `git archive --format zip --output /full/path/to/zipfile.zip master` if using git
-- Include any instructions on how to build, run, and test your application
+Fetches the price for parking within a specific time range.
 
-## Sample JSON for testing
+**Query Parameters**
+
+- start: The start time in ISO-8601 format with timezones.
+- end: The end time in ISO-8601 format with timezones.
+
+Datetime ranges must be specified in ISO-8601 format. A rate must completely encapsulate a datetime range for it to be available. **Example:** `?start=2015-07-01T07:00:00-05:00&end=2015-07-01T12:00:00-05:00`
+
+**Response**
+
+- 200 OK: Returns a JSON object with the price.
 
 ```json
 {
-  "rates": [
-    {
-      "days": "mon,tues,thurs",
-      "times": "0900-2100",
-      "tz": "America/Chicago",
-      "price": 1500
-    },
-    {
-      "days": "fri,sat,sun",
-      "times": "0900-2100",
-      "tz": "America/Chicago",
-      "price": 2000
-    },
-    {
-      "days": "wed",
-      "times": "0600-1800",
-      "tz": "America/Chicago",
-      "price": 1750
-    },
-    {
-      "days": "mon,wed,sat",
-      "times": "0100-0500",
-      "tz": "America/Chicago",
-      "price": 1000
-    },
-    {
-      "days": "sun,tues",
-      "times": "0100-0700",
-      "tz": "America/Chicago",
-      "price": 925
-    }
-  ]
+  "price": 1500
 }
 ```
 
-The timezones specified in the JSON file adhere to the 2017c version of the tz database. Assume that there could be other (non America/Chicago) timezones specified. For more information: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+- 200 OK: If the price is unavailable.
 
-Assume that rates in this file will never overlap
+```json
+{
+  "price": "unavailable"
+}
+```
 
-## Sample result
+## Testing
 
-Datetime ranges must be specified in ISO-8601 format. A rate must completely encapsulate a datetime range for it to be available.
-
-- `2015-07-01T07:00:00-05:00` to `2015-07-01T12:00:00-05:00` must yield `{'price': 1750}`
-- `2015-07-04T15:00:00+00:00` to `2015-07-04T20:00:00+00:00` must yield `{'price': 2000}`
-- `2015-07-04T07:00:00+05:00` to `2015-07-04T20:00:00+05:00` must yield `"unavailable"`
-
-## Assessment
-
-Members of our backend team will ensure your code meets the functional criteria
-and score the submission based on project design, language/framework best
-practices, code cleanliness and organization, ease of use, packaging,
-documentation, and testing practices.
+This project is equipped with a testing script (`./test.sh`) that runs the Django test command once required packages have been installed. This script isn't required to run tests if the environment has already been initialized and you know what you are doing.

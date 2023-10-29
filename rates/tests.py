@@ -70,6 +70,21 @@ class RateTests(APITestCase):
         self.assertEqual(response_json[0]["tz"], put_rate["tz"])
         self.assertEqual(response_json[0]["price"], put_rate["price"])
 
+    def test_post_rates_not_allowed(self):
+        response = self.client.post("/rates/")
+
+        self.assertEqual(response.status_code, 405)
+
+    def test_patch_rates_not_allowed(self):
+        response = self.client.patch("/rates/")
+
+        self.assertEqual(response.status_code, 405)
+
+    def test_delete_rates_not_allowed(self):
+        response = self.client.delete("/rates/")
+
+        self.assertEqual(response.status_code, 405)
+
 
 class PriceTests(APITestCase):
     fixtures = ["rates_fixture"]
@@ -115,3 +130,23 @@ class PriceTests(APITestCase):
         self.assertEqual(
             "Query parameters, 'start' must be before 'end'.", response.json()
         )
+
+    def test_post_price_not_allowed(self):
+        response = self.client.post("/price/")
+
+        self.assertEqual(response.status_code, 405)
+
+    def test_patch_price_not_allowed(self):
+        response = self.client.patch("/price/")
+
+        self.assertEqual(response.status_code, 405)
+
+    def test_put_price_not_allowed(self):
+        response = self.client.put("/price/")
+
+        self.assertEqual(response.status_code, 405)
+
+    def test_delete_price_not_allowed(self):
+        response = self.client.delete("/price/")
+
+        self.assertEqual(response.status_code, 405)
